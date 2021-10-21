@@ -28,15 +28,29 @@ contract Staker is ExampleExternalContract {
 
     // write a function that returns the number of seconds until the deadline
     function timeLeft() public view returns (uint256) {
-        return deadline - now;
-    }
-
-    function execute() public {
-        if (address(this).balance > threshold && timeLeft() < 0) {
-            exampleExternalContract.complete{value: address(this).balance}();
-        } else if (now >= deadline) {
+        if (now <= deadline) {
+            return deadline - now;
+        } else {
             return 0;
         }
+    }
+
+    bool public openForWithdraw = false;
+
+    function execute() public {
+        if (address(this).balance > threshold && timeLeft() <= 0) {
+            exampleExternalContract.complete{value: address(this).balance}();
+            openForWithdraw = true;
+        }
+    }
+
+    // write a function that withdraws the funds
+    function withdraw() public {
+        require(openForWithdraw);
+        require(address(this).balance >= threshold);
+
+        msg.sender.transfer(address(this).balance);
+        openForWithdraw = false;
     }
 
     // After some `deadline` allow anyone to call an `execute()` function
